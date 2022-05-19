@@ -13,42 +13,50 @@ const refs = {
     form: document.querySelector('#search-form'),
     input: document.querySelector('[name="searchQuery"]'),
     submitBtn: document.querySelector('[type="submit"]'),
-    gallery: document.querySelector('.gallery')
+    gallery: document.querySelector('.gallery'),
+    loadMoreBtn: document.querySelector('.load-more')
 };
 
 
 refs.form.addEventListener('submit', onFormSubmit);
 refs.input.addEventListener('input', onChangeInput);
+refs.loadMoreBtn.addEventListener('click', onClickLoadMoreBtn)
 
-function onFormSubmit(e) {
+async function onFormSubmit(e) {
     e.preventDefault();
 
-    const url = `${PIXABAY_URL}?key=${options.key}&q=${options.q}&image_type=photo&orientation=horizontal&safesearch=true`;
+    const url = `${PIXABAY_URL}?key=${options.key}&q=${options.q}&per_page=5&image_type=photo&orientation=horizontal&safesearch=true`;
+    
+    const response = await getPhotos(url);
+    const photoArray = response.data.hits;
+    const transformArray = transformArrayRequired(photoArray);
 
-    getPhotos(url).then(r => {
-        if (r.length === 0) {
-            return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
-        }
+    if (transformArray.length === 0) {
+        return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
+    };
 
-        cardRenderMurcup(r);
-    })
 
+    console.log(photoArray);
+    console.log(transformArray);
+
+    cardRenderMurcup(transformArray);
 
 }
     
+function onClickLoadMoreBtn() {
+    
+}
 
 
 function onChangeInput(e) {
     options.q = e.currentTarget.value; 
 }
 
-async function getPhotos (url) {
+ function getPhotos (url) {
     try {
-        const response = await axios.get(url);
-        const photoArray = await response.data.hits;
-        const transformArray = await transformArrayRequired(photoArray);
-
-        return transformArray;
+        const response =  axios.get(url);
+        return response;
+        
     } catch (error) {
         console.error(error);
     }
