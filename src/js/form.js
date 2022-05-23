@@ -1,13 +1,12 @@
 import Notiflix from 'notiflix';
 import cardTpl from '../../cards';
+import GalleryServis from './gallary_servis'
 
 const axios = require('axios');
 
-const PIXABAY_URL = 'https://pixabay.com/api/';
-const options = {
-    key: '27489474-94b4f7a986300e41a9c081f6f',  
-    q: ''
-};
+const galleryServis = new GalleryServis();
+
+let inputValue = ""; 
 
 const refs = {
     form: document.querySelector('#search-form'),
@@ -22,64 +21,50 @@ refs.form.addEventListener('submit', onFormSubmit);
 refs.input.addEventListener('input', onChangeInput);
 refs.loadMoreBtn.addEventListener('click', onClickLoadMoreBtn)
 
-async function onFormSubmit(e) {
-    e.preventDefault();
+ async function onFormSubmit(e) {
+     e.preventDefault();
 
-    const url = `${PIXABAY_URL}?key=${options.key}&q=${options.q}&per_page=5&image_type=photo&orientation=horizontal&safesearch=true`;
-    
-    const response = await getPhotos(url);
-    const photoArray = response.data.hits;
-    const transformArray = transformArrayRequired(photoArray);
-
-    if (transformArray.length === 0) {
+     if (inputValue === '') {
         return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
-    };
+     }
+     
+     galleryServis.query = e.currentTarget.elements.query.value;
+     galleryServis.resetPage();
+     
+     
+     const photoArray = await galleryServis.getPhotos();
+     
+     if (photoArray.length === 0) {
+         return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
+     };
 
 
     console.log(photoArray);
-    console.log(transformArray);
+     
+    renderClear(refs.gallery);
+    cardRenderMurcup(photoArray);
 
-    cardRenderMurcup(transformArray);
+
 
 }
     
-function onClickLoadMoreBtn() {
-    
-}
+async function onClickLoadMoreBtn() {
 
+    const photoArray = await galleryServis.getPhotos();
+    if (photoArray.length === 0) {
+        return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
+    };
+
+    cardRenderMurcup(photoArray);
+}
 
 function onChangeInput(e) {
-    options.q = e.currentTarget.value; 
+    inputValue = e.currentTarget.value;
 }
 
- function getPhotos (url) {
-    try {
-        const response =  axios.get(url);
-        return response;
-        
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-function transformArrayRequired(array) {
-   return array.map(({webformatURL, largeImageURL, tags, likes, views, comments, downloads}) => {
-        return {
-            webformatURL,
-            largeImageURL,
-            tags,
-            likes,
-            views,
-            comments,
-            downloads
-        }
-    }
-    )
-}
- 
  function cardRenderMurcup(array) {
     const marcup = array.map(card => cardTpl(card)).join('');
-     refs.gallery.innerHTML = marcup;
+     refs.gallery.insertAdjacentHTML('beforeend', marcup);
 }
 
 function renderClear(element) {
