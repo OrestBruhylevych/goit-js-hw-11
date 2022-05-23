@@ -1,12 +1,13 @@
 import Notiflix from 'notiflix';
 import cardTpl from '../../cards';
-import GalleryServis from './gallary_servis'
+import GalleryServis from './gallary_servis';
+import SimpleLightbox from "simplelightbox";
 
-const axios = require('axios');
+import "simplelightbox/dist/simple-lightbox.min.css";
+
+
 
 const galleryServis = new GalleryServis();
-
-let inputValue = ""; 
 
 const refs = {
     form: document.querySelector('#search-form'),
@@ -18,48 +19,54 @@ const refs = {
 
 
 refs.form.addEventListener('submit', onFormSubmit);
-refs.input.addEventListener('input', onChangeInput);
 refs.loadMoreBtn.addEventListener('click', onClickLoadMoreBtn)
 
  async function onFormSubmit(e) {
      e.preventDefault();
 
+     let inputValue = e.currentTarget.elements.searchQuery.value;
+
+     refs.loadMoreBtn.style.display = 'none';
+
      if (inputValue === '') {
+         renderClear(refs.gallery);
         return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
      }
      
-     galleryServis.query = e.currentTarget.elements.query.value;
+     galleryServis.query = inputValue;
      galleryServis.resetPage();
      
      
-     const photoArray = await galleryServis.getPhotos();
+     const { photoArray, totalPhotos } = await galleryServis.getPhotos();
      
      if (photoArray.length === 0) {
-         return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
+        renderClear(refs.gallery);
+        return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
      };
-
-
-    console.log(photoArray);
      
     renderClear(refs.gallery);
     cardRenderMurcup(photoArray);
-
-
+     
+     refs.loadMoreBtn.style.display = 'block';
+     
+     addSimpleLightbox();
 
 }
     
 async function onClickLoadMoreBtn() {
 
-    const photoArray = await galleryServis.getPhotos();
-    if (photoArray.length === 0) {
+    const { photoArray, totalPhotos } = await galleryServis.getPhotos();
+
+     if (refs.gallery.children.length === totalPhotos) {
+        refs.loadMoreBtn.style.display = 'none';
         return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
-    };
+    }
 
     cardRenderMurcup(photoArray);
-}
 
-function onChangeInput(e) {
-    inputValue = e.currentTarget.value;
+    addSimpleLightbox();
+
+    scroll();
 }
 
  function cardRenderMurcup(array) {
@@ -72,4 +79,28 @@ function renderClear(element) {
   element.innerHTML = markup;
 }
 
+function addPreventDefaultLink (link) {
+    return link.addEventListener('click', (e) => {
+        e.preventDefault()
+    });
+}
 
+function addSimpleLightbox() {
+    const linksEl = document.querySelectorAll('.photo');
+     linksEl.forEach((link) => {
+         addPreventDefaultLink(link);
+     });
+    let lightbox = new SimpleLightbox('.gallery a');
+    lightbox.refresh();
+}
+
+function scroll() {
+    const { height: cardHeight } = document
+  .querySelector(".gallery")
+  .firstElementChild.getBoundingClientRect();
+
+window.scrollBy({
+  top: cardHeight ,
+  behavior: "smooth",
+});
+}
