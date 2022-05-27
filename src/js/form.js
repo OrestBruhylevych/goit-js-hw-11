@@ -6,7 +6,6 @@ import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 
 
-
 const galleryServis = new GalleryServis();
 
 const refs = {
@@ -14,7 +13,8 @@ const refs = {
     input: document.querySelector('[name="searchQuery"]'),
     submitBtn: document.querySelector('[type="submit"]'),
     gallery: document.querySelector('.gallery'),
-    loadMoreBtn: document.querySelector('.load-more')
+    loadMoreBtn: document.querySelector('.load-more'),
+    sentinel: document.querySelector('#sentinel')
 };
 
 
@@ -104,3 +104,27 @@ window.scrollBy({
   behavior: "smooth",
 });
 }
+
+ function onEntry (entryes) {
+    entryes.forEach(async entry => {
+        if (entry.isIntersecting && galleryServis.query !== '') {
+             const { photoArray, totalPhotos } = await galleryServis.getPhotos();
+
+            cardRenderMurcup(photoArray);
+
+            addSimpleLightbox();
+            
+            if (refs.gallery.children.length === totalPhotos) {
+                 refs.loadMoreBtn.style.display = 'none';
+                 return Notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
+             }
+        }
+    });
+};
+
+const options = {
+    rootMargin: '150px' 
+};
+
+const observer = new IntersectionObserver(onEntry, options);
+observer.observe(refs.sentinel);
